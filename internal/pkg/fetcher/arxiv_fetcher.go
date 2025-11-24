@@ -35,11 +35,30 @@ func NewArxivFetcher(client *http.Client) *ArxivFetcher {
 
 // Fetch fetches the metadata of the paper by the given configuration
 func (f *ArxivFetcher) Fetch(ctx context.Context, config entities.FetchConfig) ([]entities.Paper, error) {
+	queryURL, err := f.buildQueryURL(config)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := f.buildRequest(ctx, queryURL)
+	if err != nil {
+		return nil, err
+	}
+
+	body, err := f.doRequest(req)
+	if err != nil {
+		return nil, err
+	}
+
+	return f.parseResponse(body)
+}
+
+func (f *ArxivFetcher) buildQueryURL(config entities.FetchConfig) (string, error) {
 	if config.Category == "" {
-		return nil, fmt.Errorf("category is required")
+		return "", fmt.Errorf("category is required")
 	}
 	if config.TimeSpan == "" && config.MaxResults == 0 {
-		return nil, fmt.Errorf("either TimeSpan or MaxResults must be specified")
+		return "", fmt.Errorf("either TimeSpan or MaxResults must be specified")
 	}
 
 	// Build search query
@@ -74,17 +93,10 @@ func (f *ArxivFetcher) Fetch(ctx context.Context, config entities.FetchConfig) (
 		v.Set("max_results", fmt.Sprintf("%d", config.MaxResults))
 	}
 
-	// baseURL already has '?', so we need to be careful.
-	// If baseURL ends with '?', we can just append encoded query.
-	// But standard way is to parse baseURL and add params.
-	// For simplicity, assuming baseURL ends with '?' as per my implementation:
-	// baseURL := "http://export.arxiv.org/api/query?"
-	// But I should be robust.
-
 	// Let's parse the baseURL
 	u, err := url.Parse(f.baseURL)
 	if err != nil {
-		return nil, fmt.Errorf("invalid base URL: %w", err)
+		return "", fmt.Errorf("invalid base URL: %w", err)
 	}
 
 	// Add new params to existing query params (if any)
@@ -96,13 +108,18 @@ func (f *ArxivFetcher) Fetch(ctx context.Context, config entities.FetchConfig) (
 	}
 	u.RawQuery = q.Encode()
 
-	queryURL := u.String()
+	return u.String(), nil
+}
 
+func (f *ArxivFetcher) buildRequest(ctx context.Context, queryURL string) (*http.Request, error) {
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, queryURL, nil)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create request: %w", err)
 	}
+	return req, nil
+}
 
+func (f *ArxivFetcher) doRequest(req *http.Request) ([]byte, error) {
 	resp, err := f.client.Do(req)
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch data: %w", err)
@@ -117,7 +134,10 @@ func (f *ArxivFetcher) Fetch(ctx context.Context, config entities.FetchConfig) (
 	if err != nil {
 		return nil, fmt.Errorf("failed to read response body: %w", err)
 	}
+	return body, nil
+}
 
+func (f *ArxivFetcher) parseResponse(body []byte) ([]entities.Paper, error) {
 	var feed atomFeed
 	if err := xml.Unmarshal(body, &feed); err != nil {
 		return nil, fmt.Errorf("failed to unmarshal xml: %w", err)
