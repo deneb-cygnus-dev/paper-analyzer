@@ -47,3 +47,20 @@ type Link struct {
 	Rel  string `json:"rel,omitempty"`
 	Type string `json:"type,omitempty"`
 }
+
+// FetchConfig represents the configuration for fetching papers
+type FetchConfig struct {
+	// Category to search for (e.g., "cs.SE")
+	Category string
+
+	// TimeSpan to filter papers (e.g., "last_5_days")
+	// Mutually inclusive with MaxResults (at least one required)
+	TimeSpan string
+
+	// MaxResults to limit the number of papers
+	// Mutually inclusive with TimeSpan
+	MaxResults int
+
+	// Keywords to search for
+	Keywords []string
+}

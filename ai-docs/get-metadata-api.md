@@ -19,7 +19,7 @@ The implementation follows a modular design with clear separation of concerns:
 ```text
 internal/pkg/
 ├── entities/
-│   └── entities.go       # Data structures (Paper, Author, Link)
+│   └── entities.go       # Data structures (Paper, Author, Link, FetchConfig)
 ├── interfaces/
 │   └── interfaces.go     # MetadataFetcher interface
 └── fetcher/
@@ -31,7 +31,9 @@ internal/pkg/
 
 ### Entities (`internal/pkg/entities`)
 
-The core data structure is the `Paper` struct:
+#### `Paper`
+
+The core data structure representing a paper:
 
 ```go
 type Paper struct {
@@ -46,14 +48,38 @@ type Paper struct {
 }
 ```
 
+#### `FetchConfig`
+
+Configuration for fetching papers:
+
+```go
+type FetchConfig struct {
+    // Category to search for (e.g., "cs.SE")
+    // Required.
+    Category string
+
+    // TimeSpan to filter papers (e.g., "last_5_days")
+    // Mutually inclusive with MaxResults (at least one required).
+    TimeSpan string
+
+    // MaxResults to limit the number of papers
+    // Mutually inclusive with TimeSpan.
+    MaxResults int
+
+    // Keywords to search for
+    // Optional.
+    Keywords []string
+}
+```
+
 ### Interface (`internal/pkg/interfaces`)
 
 The `MetadataFetcher` interface defines the contract:
 
 ```go
 type MetadataFetcher interface {
-    // Fetch fetches the metadata of the paper by the given query
-    Fetch(ctx context.Context, query string) ([]entities.Paper, error)
+    // Fetch fetches the metadata of the paper by the given configuration
+    Fetch(ctx context.Context, config entities.FetchConfig) ([]entities.Paper, error)
 }
 ```
 
@@ -82,17 +108,21 @@ import (
     "fmt"
     "log"
 
+    "github.com/deneb-cygnus-dev/paper-analyzer/internal/pkg/entities"
     "github.com/deneb-cygnus-dev/paper-analyzer/internal/pkg/fetcher"
 )
 
 func main() {
     f := fetcher.NewArxivFetcher(nil)
     
-    // Query arXiv API
-    // See https://arxiv.org/help/api/user-manual#query_details for query format
-    query := "http://export.arxiv.org/api/query?search_query=cat:cs.SE&max_results=1"
+    // Configure fetch parameters
+    config := entities.FetchConfig{
+        Category:   "cs.SE",
+        MaxResults: 5,
+        Keywords:   []string{"fuzzing", "testing"},
+    }
     
-    papers, err := f.Fetch(context.Background(), query)
+    papers, err := f.Fetch(context.Background(), config)
     if err != nil {
         log.Fatalf("Failed to fetch papers: %v", err)
     }

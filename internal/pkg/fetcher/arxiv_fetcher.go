@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"time"
 
 	"github.com/deneb-cygnus-dev/paper-analyzer/internal/pkg/entities"
@@ -14,7 +15,8 @@ import (
 
 // ArxivFetcher implements MetadataFetcher for arXiv.org
 type ArxivFetcher struct {
-	client *http.Client
+	client  *http.Client
+	baseURL string
 }
 
 // Ensure ArxivFetcher implements MetadataFetcher
@@ -26,13 +28,77 @@ func NewArxivFetcher(client *http.Client) *ArxivFetcher {
 		client = http.DefaultClient
 	}
 	return &ArxivFetcher{
-		client: client,
+		client:  client,
+		baseURL: "http://export.arxiv.org/api/query?",
 	}
 }
 
-// Fetch fetches the metadata of the paper by the given query
-func (f *ArxivFetcher) Fetch(ctx context.Context, query string) ([]entities.Paper, error) {
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, query, nil)
+// Fetch fetches the metadata of the paper by the given configuration
+func (f *ArxivFetcher) Fetch(ctx context.Context, config entities.FetchConfig) ([]entities.Paper, error) {
+	if config.Category == "" {
+		return nil, fmt.Errorf("category is required")
+	}
+	if config.TimeSpan == "" && config.MaxResults == 0 {
+		return nil, fmt.Errorf("either TimeSpan or MaxResults must be specified")
+	}
+
+	// Build search query
+	searchQuery := fmt.Sprintf("cat:%s", config.Category)
+	if len(config.Keywords) > 0 {
+		for _, kw := range config.Keywords {
+			searchQuery += fmt.Sprintf(" AND all:%s", kw)
+		}
+	}
+
+	// Handle TimeSpan if specified (e.g., "last_5_days")
+	if config.TimeSpan != "" {
+		var days int
+		if _, err := fmt.Sscanf(config.TimeSpan, "last_%d_days", &days); err == nil {
+			// Calculate start date
+			startDate := time.Now().AddDate(0, 0, -days)
+			// Format: YYYYMMDDHHMM
+			startStr := startDate.Format("200601021504")
+			// Append to search query: submittedDate:[START TO *]
+			// Note: arXiv API uses "submittedDate" for submission time
+			searchQuery += fmt.Sprintf(" AND submittedDate:[%s0000 TO *]", startStr)
+		}
+	}
+
+	// Use url.Values to encode parameters
+	v := url.Values{}
+	v.Set("search_query", searchQuery)
+	v.Set("sortBy", "submittedDate")
+	v.Set("sortOrder", "descending")
+
+	if config.MaxResults > 0 {
+		v.Set("max_results", fmt.Sprintf("%d", config.MaxResults))
+	}
+
+	// baseURL already has '?', so we need to be careful.
+	// If baseURL ends with '?', we can just append encoded query.
+	// But standard way is to parse baseURL and add params.
+	// For simplicity, assuming baseURL ends with '?' as per my implementation:
+	// baseURL := "http://export.arxiv.org/api/query?"
+	// But I should be robust.
+
+	// Let's parse the baseURL
+	u, err := url.Parse(f.baseURL)
+	if err != nil {
+		return nil, fmt.Errorf("invalid base URL: %w", err)
+	}
+
+	// Add new params to existing query params (if any)
+	q := u.Query()
+	for key, values := range v {
+		for _, value := range values {
+			q.Add(key, value)
+		}
+	}
+	u.RawQuery = q.Encode()
+
+	queryURL := u.String()
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, queryURL, nil)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create request: %w", err)
 	}

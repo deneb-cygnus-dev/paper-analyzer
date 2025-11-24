@@ -7,6 +7,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/deneb-cygnus-dev/paper-analyzer/internal/pkg/entities"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -29,14 +30,26 @@ func TestArxivFetcher_Fetch(t *testing.T) {
 `
 
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// Verify query parameters
+		q := r.URL.Query()
+		assert.Contains(t, q.Get("search_query"), "cat:cs.CR")
+		assert.Equal(t, "submittedDate", q.Get("sortBy"))
+		assert.Equal(t, "descending", q.Get("sortOrder"))
+
 		w.WriteHeader(http.StatusOK)
 		w.Write([]byte(mockResponse))
 	}))
 	defer server.Close()
 
 	fetcher := NewArxivFetcher(server.Client())
+	fetcher.baseURL = server.URL + "?" // Override base URL for testing
 
-	papers, err := fetcher.Fetch(context.Background(), server.URL)
+	config := entities.FetchConfig{
+		Category:   "cs.CR",
+		MaxResults: 10,
+	}
+
+	papers, err := fetcher.Fetch(context.Background(), config)
 	assert.NoError(t, err)
 	assert.Len(t, papers, 1)
 
@@ -52,6 +65,69 @@ func TestArxivFetcher_Fetch(t *testing.T) {
 	assert.Equal(t, expectedTime, paper.PublishDate)
 }
 
+func TestArxivFetcher_Fetch_WithKeywords(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		q := r.URL.Query()
+		assert.Contains(t, q.Get("search_query"), "cat:cs.SE")
+		assert.Contains(t, q.Get("search_query"), "AND all:fuzzing")
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte(`<feed></feed>`))
+	}))
+	defer server.Close()
+
+	fetcher := NewArxivFetcher(server.Client())
+	fetcher.baseURL = server.URL + "?"
+
+	config := entities.FetchConfig{
+		Category:   "cs.SE",
+		MaxResults: 5,
+		Keywords:   []string{"fuzzing"},
+	}
+
+	_, err := fetcher.Fetch(context.Background(), config)
+	assert.NoError(t, err)
+}
+
+func TestArxivFetcher_Fetch_WithTimeSpan(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		q := r.URL.Query()
+		assert.Contains(t, q.Get("search_query"), "cat:cs.AI")
+		assert.Contains(t, q.Get("search_query"), "AND submittedDate:[")
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte(`<feed></feed>`))
+	}))
+	defer server.Close()
+
+	fetcher := NewArxivFetcher(server.Client())
+	fetcher.baseURL = server.URL + "?"
+
+	config := entities.FetchConfig{
+		Category: "cs.AI",
+		TimeSpan: "last_7_days",
+	}
+
+	_, err := fetcher.Fetch(context.Background(), config)
+	assert.NoError(t, err)
+}
+
+func TestArxivFetcher_Fetch_ValidationErrors(t *testing.T) {
+	fetcher := NewArxivFetcher(nil)
+
+	// Missing Category
+	_, err := fetcher.Fetch(context.Background(), entities.FetchConfig{
+		MaxResults: 10,
+	})
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "category is required")
+
+	// Missing Limit (TimeSpan or MaxResults)
+	_, err = fetcher.Fetch(context.Background(), entities.FetchConfig{
+		Category: "cs.LG",
+	})
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "either TimeSpan or MaxResults must be specified")
+}
+
 func TestArxivFetcher_Fetch_Error(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusInternalServerError)
@@ -59,7 +135,13 @@ func TestArxivFetcher_Fetch_Error(t *testing.T) {
 	defer server.Close()
 
 	fetcher := NewArxivFetcher(server.Client())
+	fetcher.baseURL = server.URL + "?"
 
-	_, err := fetcher.Fetch(context.Background(), server.URL)
+	config := entities.FetchConfig{
+		Category:   "cs.CR",
+		MaxResults: 1,
+	}
+
+	_, err := fetcher.Fetch(context.Background(), config)
 	assert.Error(t, err)
 }

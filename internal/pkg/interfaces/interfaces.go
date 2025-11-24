@@ -8,6 +8,6 @@ import (
 
 // MetadataFetcher is the interface for fetching paper metadata
 type MetadataFetcher interface {
-	// Fetch fetches the metadata of the paper by the given query
-	Fetch(ctx context.Context, query string) ([]entities.Paper, error)
+	// Fetch fetches the metadata of the paper by the given configuration
+	Fetch(ctx context.Context, config entities.FetchConfig) ([]entities.Paper, error)
 }
