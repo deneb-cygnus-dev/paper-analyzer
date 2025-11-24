@@ -145,3 +145,16 @@ func TestArxivFetcher_Fetch_Error(t *testing.T) {
 	_, err := fetcher.Fetch(context.Background(), config)
 	assert.Error(t, err)
 }
+
+func TestArxivFetcher_Fetch_EndToEnd(t *testing.T) {
+	fetcher := NewArxivFetcher(nil)
+
+	config := entities.FetchConfig{
+		Category:   "cs.SE",
+		MaxResults: 5,
+	}
+
+	papers, err := fetcher.Fetch(context.Background(), config)
+	assert.NoError(t, err)
+	assert.Len(t, papers, 5)
+}
