@@ -1,54 +1,58 @@
-# Context
+# AGENTS.md for paper-analyzer
+
+## Context
 
 The "paper-analyzer" project is a polyglot application (Go and Python) designed to process and analyze research papers, specifically targeting metadata and content from arXiv.org.
 
-# Goals
+## Goals
 
 - Provide a robust API for fetching paper metadata.
 - Analyze paper content using Python-based tools.
 - Maintain a clean, modular, and testable codebase.
 
-# Principles
+## Principles
 
 - **Modularity**: Separation of concerns is paramount. Use interfaces to define contracts and separate implementation details.
 - **Testability**: All implementations must be covered by unit tests.
 - **Simplicity**: Keep the design simple and understandable.
 
-# Conventions
+## Conventions
 
-## Coding Style
+### Coding Style
 
-### Go
+#### Go Style
+
 - Follow standard Go conventions (Effective Go).
 - **File Naming**: Use `snake_case` for file names (e.g., `arxiv_fetcher.go`).
 - **Test File Naming**: Test files must match the source file name with `_test` suffix (e.g., `arxiv_fetcher_test.go` for `arxiv_fetcher.go`).
 - **Interfaces**: Interfaces should be defined in a dedicated `interfaces` package (e.g., `internal/pkg/interfaces`) to avoid circular dependencies and promote decoupling.
 - **Implementations**: Concrete implementations should be in their own packages (e.g., `internal/pkg/fetcher`).
 
-### Python
+### Python Style
+
 - Follow PEP 8 guidelines.
 - Use virtual environments for dependency management.
 
-## Project Structure
+### Project Structure
 
 - `cmd/`: Main Go application entry points.
 - `internal/`: Private Go packages.
-    - `pkg/entities`: Data structures (e.g., `Paper`, `Author`).
-    - `pkg/interfaces`: Interface definitions (e.g., `MetadataFetcher`).
-    - `pkg/fetcher`: Concrete implementations (e.g., `ArxivFetcher`).
+  - `pkg/entities`: Data structures (e.g., `Paper`, `Author`).
+  - `pkg/interfaces`: Interface definitions (e.g., `MetadataFetcher`).
+  - `pkg/fetcher`: Concrete implementations (e.g., `ArxivFetcher`).
 - `python/`: Python source code.
 - `ai-docs/`: Documentation for AI agents.
 - `mise.local.toml`: Tool version management.
 
-# Tech Stack
+## Tech Stack
 
 - **Go**: Version 1.25.1
 - **Python**: Version 3.14
 - **Version Management**: `mise`
 
-# Building and Running
+## Building and Running
 
-## Go
+### Go Building, Testing, and Running
 
 ```bash
 # Build the Go application
@@ -58,7 +62,7 @@ go build ./...
 go test ./...
 ```
 
-## Python
+### Python Building, Testing, and Running
 
 ```bash
 # Setup virtual environment
