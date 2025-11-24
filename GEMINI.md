@@ -1,50 +1,73 @@
-# Project Overview
+# Context
 
-This project, "paper-analyzer," appears to be a polyglot application utilizing both Go and Python. The directory structure suggests a standard Go layout (`cmd/`, `internal/`) for the Go components and a dedicated `python/` directory for the Python parts.
+The "paper-analyzer" project is a polyglot application (Go and Python) designed to process and analyze research papers, specifically targeting metadata and content from arXiv.org.
 
-The specific purpose of the project is not detailed in the `README.md`, but the name "paper-analyzer" suggests it might be a tool for processing and analyzing documents or research papers.
+# Goals
 
-**Technologies:**
+- Provide a robust API for fetching paper metadata.
+- Analyze paper content using Python-based tools.
+- Maintain a clean, modular, and testable codebase.
 
-*   **Go:** Version 1.25.1
-*   **Python:** Version 3.14
+# Principles
 
-**Project Structure:**
+- **Modularity**: Separation of concerns is paramount. Use interfaces to define contracts and separate implementation details.
+- **Testability**: All implementations must be covered by unit tests.
+- **Simplicity**: Keep the design simple and understandable.
 
-*   `cmd/`: Likely contains the main Go application entry points.
-*   `internal/`: Likely contains private Go packages for the application.
-*   `python/`: Contains the Python source code.
-*   `mise.toml`: Defines the project's tool versions (Go and Python).
+# Conventions
+
+## Coding Style
+
+### Go
+- Follow standard Go conventions (Effective Go).
+- **File Naming**: Use `snake_case` for file names (e.g., `arxiv_fetcher.go`).
+- **Test File Naming**: Test files must match the source file name with `_test` suffix (e.g., `arxiv_fetcher_test.go` for `arxiv_fetcher.go`).
+- **Interfaces**: Interfaces should be defined in a dedicated `interfaces` package (e.g., `internal/pkg/interfaces`) to avoid circular dependencies and promote decoupling.
+- **Implementations**: Concrete implementations should be in their own packages (e.g., `internal/pkg/fetcher`).
+
+### Python
+- Follow PEP 8 guidelines.
+- Use virtual environments for dependency management.
+
+## Project Structure
+
+- `cmd/`: Main Go application entry points.
+- `internal/`: Private Go packages.
+    - `pkg/entities`: Data structures (e.g., `Paper`, `Author`).
+    - `pkg/interfaces`: Interface definitions (e.g., `MetadataFetcher`).
+    - `pkg/fetcher`: Concrete implementations (e.g., `ArxivFetcher`).
+- `python/`: Python source code.
+- `ai-docs/`: Documentation for AI agents.
+- `mise.local.toml`: Tool version management.
+
+# Tech Stack
+
+- **Go**: Version 1.25.1
+- **Python**: Version 3.14
+- **Version Management**: `mise`
 
 # Building and Running
 
-**Go:**
+## Go
 
 ```bash
-# TODO: Verify the build and run commands for the Go application.
 # Build the Go application
 go build ./...
 
-# Run the main application (assuming a main package in cmd/paper-analyzer)
-go run ./cmd/paper-analyzer
+# Run tests
+go test ./...
 ```
 
-**Python:**
+## Python
 
 ```bash
-# TODO: Verify the setup and execution for the Python part.
-# It's recommended to use a virtual environment.
+# Setup virtual environment
 python -m venv .venv
 source .venv/bin/activate
 
-# Install dependencies (assuming a requirements.txt file)
+# Install dependencies
 pip install -r python/requirements.txt
 
-# Run the main Python script (assuming a main.py)
+# Run main script
 python python/main.py
 ```
-
-# Development Conventions
-
-*   Go code seems to follow the standard project layout (`cmd/`, `internal/`).
-*   Dependency versions for Go and Python are managed via `mise.toml`.
