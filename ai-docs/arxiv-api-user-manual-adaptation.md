@@ -48,8 +48,8 @@ entities.FetchConfig{
 
 The `Fetch` method enforces the following validation rules:
 
-1. **Category is Required**: The `Category` field must not be empty.
-2. **Limit is Required**: Either `TimeSpan` or `MaxResults` (or both) must be specified to prevent fetching excessive data.
+1. **Category is Required**: The `Category` field must not be empty. Returns `ErrMissingRequiredField` (400002).
+1. **Limit is Required**: Either `TimeSpan` or `MaxResults` (or both) must be specified to prevent fetching excessive data. Returns `ErrInvalidInput` (400001).
 
 ### URL Encoding
 

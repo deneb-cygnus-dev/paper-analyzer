@@ -39,6 +39,23 @@ func Wrap(err error, customErr *CustomError) *CustomError {
 	}
 }
 
+// Is checks if the target error matches the custom error code.
+func Is(err error, target *CustomError) bool {
+	if customErr, ok := err.(*CustomError); ok {
+		return customErr.Code == target.Code
+	}
+	return false
+}
+
+// As checks if the error is a CustomError and assigns it to the target.
+func As(err error, target **CustomError) bool {
+	if customErr, ok := err.(*CustomError); ok {
+		*target = customErr
+		return true
+	}
+	return false
+}
+
 // General / Internal Errors (10xxxx)
 var (
 	ErrInternalServer = New(100001, "Internal server error occurred.")

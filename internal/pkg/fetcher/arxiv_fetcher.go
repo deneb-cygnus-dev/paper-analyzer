@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/deneb-cygnus-dev/paper-analyzer/internal/pkg/entities"
+	"github.com/deneb-cygnus-dev/paper-analyzer/internal/pkg/errors"
 	"github.com/deneb-cygnus-dev/paper-analyzer/internal/pkg/interfaces"
 )
 
@@ -55,10 +56,10 @@ func (f *ArxivFetcher) Fetch(ctx context.Context, config entities.FetchConfig) (
 
 func (f *ArxivFetcher) buildQueryURL(config entities.FetchConfig) (string, error) {
 	if config.Category == "" {
-		return "", fmt.Errorf("category is required")
+		return "", errors.ErrMissingRequiredField
 	}
 	if config.TimeSpan == "" && config.MaxResults == 0 {
-		return "", fmt.Errorf("either TimeSpan or MaxResults must be specified")
+		return "", errors.ErrInvalidInput
 	}
 
 	// Build search query
@@ -96,7 +97,7 @@ func (f *ArxivFetcher) buildQueryURL(config entities.FetchConfig) (string, error
 	// Let's parse the baseURL
 	u, err := url.Parse(f.baseURL)
 	if err != nil {
-		return "", fmt.Errorf("invalid base URL: %w", err)
+		return "", errors.Wrap(err, errors.ErrInternalServer)
 	}
 
 	// Add new params to existing query params (if any)
@@ -114,7 +115,7 @@ func (f *ArxivFetcher) buildQueryURL(config entities.FetchConfig) (string, error
 func (f *ArxivFetcher) buildRequest(ctx context.Context, queryURL string) (*http.Request, error) {
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, queryURL, nil)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create request: %w", err)
+		return nil, errors.Wrap(err, errors.ErrInternalServer)
 	}
 	return req, nil
 }
@@ -122,17 +123,17 @@ func (f *ArxivFetcher) buildRequest(ctx context.Context, queryURL string) (*http
 func (f *ArxivFetcher) doRequest(req *http.Request) ([]byte, error) {
 	resp, err := f.client.Do(req)
 	if err != nil {
-		return nil, fmt.Errorf("failed to fetch data: %w", err)
+		return nil, errors.Wrap(err, errors.ErrNetwork)
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("unexpected status code: %d", resp.StatusCode)
+		return nil, errors.New(errors.ErrExternalAPI.Code, fmt.Sprintf("unexpected status code: %d", resp.StatusCode))
 	}
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return nil, fmt.Errorf("failed to read response body: %w", err)
+		return nil, errors.Wrap(err, errors.ErrNetwork)
 	}
 	return body, nil
 }
@@ -140,7 +141,7 @@ func (f *ArxivFetcher) doRequest(req *http.Request) ([]byte, error) {
 func (f *ArxivFetcher) parseResponse(body []byte) ([]entities.Paper, error) {
 	var feed atomFeed
 	if err := xml.Unmarshal(body, &feed); err != nil {
-		return nil, fmt.Errorf("failed to unmarshal xml: %w", err)
+		return nil, errors.Wrap(err, errors.ErrExternalAPIParsing)
 	}
 
 	var papers []entities.Paper
