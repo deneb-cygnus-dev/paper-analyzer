@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/deneb-cygnus-dev/paper-analyzer/internal/pkg/entities"
+	"github.com/deneb-cygnus-dev/paper-analyzer/internal/pkg/errors"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -118,14 +119,14 @@ func TestArxivFetcher_Fetch_ValidationErrors(t *testing.T) {
 		MaxResults: 10,
 	})
 	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "category is required")
+	assert.True(t, errors.Is(err, errors.ErrMissingRequiredField))
 
 	// Missing Limit (TimeSpan or MaxResults)
 	_, err = fetcher.Fetch(context.Background(), entities.FetchConfig{
 		Category: "cs.LG",
 	})
 	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "either TimeSpan or MaxResults must be specified")
+	assert.True(t, errors.Is(err, errors.ErrInvalidInput))
 }
 
 func TestArxivFetcher_Fetch_Error(t *testing.T) {
@@ -144,6 +145,9 @@ func TestArxivFetcher_Fetch_Error(t *testing.T) {
 
 	_, err := fetcher.Fetch(context.Background(), config)
 	assert.Error(t, err)
+	var customErr *errors.CustomError
+	assert.True(t, errors.As(err, &customErr))
+	assert.Equal(t, errors.ErrExternalAPI.Code, customErr.Code)
 }
 
 func TestArxivFetcher_Fetch_EndToEnd(t *testing.T) {
