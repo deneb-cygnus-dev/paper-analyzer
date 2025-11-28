@@ -37,7 +37,6 @@ Error codes are 6 digits long and categorized by the first two digits, following
 
 ### General / Internal (10xxxx)
 
-
 | Code | Variable | Message |
 | :--- | :--- | :--- |
 | `100001` | `ErrInternalServer` | Internal server error occurred. |
