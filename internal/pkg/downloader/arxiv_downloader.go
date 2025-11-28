@@ -11,31 +11,46 @@ import (
 
 	"github.com/deneb-cygnus-dev/paper-analyzer/internal/pkg/entities"
 	"github.com/deneb-cygnus-dev/paper-analyzer/internal/pkg/errors"
+	"github.com/deneb-cygnus-dev/paper-analyzer/internal/pkg/interfaces"
 )
 
 // ArxivDownloader implements the PDFDownloader interface
 type ArxivDownloader struct {
+	downloadDir string
+}
+
+// Ensure ArxivDownloader implements PDFDownloader
+var _ interfaces.PDFDownloader = (*ArxivDownloader)(nil)
+
+// NewArxivDownloader creates a new ArxivDownloader
+func NewArxivDownloader(downloadDir string) *ArxivDownloader {
+	return &ArxivDownloader{
+		downloadDir: downloadDir,
+	}
 }
 
 // Download implements the PDFDownloader interface
-func (d *ArxivDownloader) Download(ctx context.Context, papers []entities.Paper, downloadDirPath string) ([]string, error) {
-	var downloadedPaths []string
+func (d *ArxivDownloader) Download(ctx context.Context, papers []entities.Paper) (map[string]string, map[string]error) {
+	downloadedPaths := make(map[string]string)
+	downloadErrors := make(map[string]error)
 
 	for _, paper := range papers {
 		pdfLink := d.findPDFLink(paper)
 		if pdfLink == "" {
-			return nil, errors.Wrap(fmt.Errorf("paper %s has no PDF link", paper.ID), errors.ErrPaperDownload)
+			downloadErrors[paper.ID] = errors.Wrap(fmt.Errorf("paper %s has no PDF link", paper.ID), errors.ErrPaperDownload)
+			continue
 		}
 
-		filePath, err := d.downloadPaper(ctx, pdfLink, paper.ID, downloadDirPath)
+		filePath, err := d.downloadPaper(ctx, pdfLink, paper.ID, d.downloadDir)
 		if err != nil {
-			return nil, errors.Wrap(err, errors.ErrPaperDownload)
+			downloadErrors[paper.ID] = errors.Wrap(err, errors.ErrPaperDownload)
+			continue
 		}
 
-		downloadedPaths = append(downloadedPaths, filePath)
+		downloadedPaths[paper.ID] = filePath
 	}
 
-	return downloadedPaths, nil
+	return downloadedPaths, downloadErrors
 }
 
 func (d *ArxivDownloader) findPDFLink(paper entities.Paper) string {

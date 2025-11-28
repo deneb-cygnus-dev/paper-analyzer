@@ -21,7 +21,7 @@ func TestArxivDownloader_Download_Success(t *testing.T) {
 	}
 	defer os.RemoveAll(tempDir)
 
-	downloader := &ArxivDownloader{}
+	downloader := NewArxivDownloader(tempDir)
 
 	// Use real fetcher to get a valid paper
 	f := fetcher.NewArxivFetcher(http.DefaultClient)
@@ -38,9 +38,9 @@ func TestArxivDownloader_Download_Success(t *testing.T) {
 	}
 
 	// Perform download
-	paths, err := downloader.Download(context.Background(), papers, tempDir)
-	if err != nil {
-		t.Fatalf("Download failed: %v", err)
+	paths, downloadErrors := downloader.Download(context.Background(), papers)
+	if len(downloadErrors) > 0 {
+		t.Fatalf("Download failed with errors: %v", downloadErrors)
 	}
 
 	// Verify results
@@ -72,7 +72,7 @@ func TestArxivDownloader_Download_NoPDFLink(t *testing.T) {
 	}
 	defer os.RemoveAll(tempDir)
 
-	downloader := &ArxivDownloader{}
+	downloader := NewArxivDownloader(tempDir)
 
 	// Create a dummy paper without PDF link
 	paper := entities.Paper{
@@ -87,9 +87,18 @@ func TestArxivDownloader_Download_NoPDFLink(t *testing.T) {
 		},
 	}
 
-	_, err = downloader.Download(context.Background(), []entities.Paper{paper}, tempDir)
+	paths, downloadErrors := downloader.Download(context.Background(), []entities.Paper{paper})
+	if len(paths) != 0 {
+		t.Errorf("Expected 0 paths, got %d", len(paths))
+	}
+
+	if len(downloadErrors) != 1 {
+		t.Fatalf("Expected 1 error, got %d", len(downloadErrors))
+	}
+
+	err = downloadErrors[paper.ID]
 	if err == nil {
-		t.Error("Expected error, got nil")
+		t.Errorf("Expected error for paper ID '%s', got nil", paper.ID)
 	}
 
 	// Verify error type
@@ -111,7 +120,7 @@ func TestArxivDownloader_Download_Compare(t *testing.T) {
 	}
 	defer os.RemoveAll(tempDir)
 
-	downloader := &ArxivDownloader{}
+	downloader := NewArxivDownloader(tempDir)
 
 	// Target paper
 	paperID := "2110.06449"
@@ -131,16 +140,16 @@ func TestArxivDownloader_Download_Compare(t *testing.T) {
 	}
 
 	// Perform download
-	paths, err := downloader.Download(context.Background(), []entities.Paper{paper}, tempDir)
-	if err != nil {
-		t.Fatalf("Download failed: %v", err)
+	paths, downloadErrors := downloader.Download(context.Background(), []entities.Paper{paper})
+	if len(downloadErrors) > 0 {
+		t.Fatalf("Download failed with errors: %v", downloadErrors)
 	}
 
 	if len(paths) != 1 {
 		t.Fatalf("Expected 1 path, got %d", len(paths))
 	}
 
-	downloadedPath := paths[0]
+	downloadedPath := paths[paper.ID]
 
 	// Read downloaded file
 	downloadedContent, err := os.ReadFile(downloadedPath)
@@ -158,18 +167,6 @@ func TestArxivDownloader_Download_Compare(t *testing.T) {
 	}
 
 	// Compare contents
-	// Note: PDF files might have different metadata (creation date, etc.) if downloaded at different times.
-	// However, the user asked to compare them. If they are identical byte-by-byte, great.
-	// If not, we might need to be more lenient or check PDF structure, but let's try byte comparison first.
-	// Wait, the artifact is likely just a manually downloaded copy.
-	// If the server serves the exact same file every time, it should match.
-	// But sometimes dynamic watermarks or timestamps are added.
-	// Let's assume exact match for now as per request.
-
-	// Actually, let's just check if the size is roughly the same or if it's a valid PDF.
-	// But the user said "compare it with already downloaded file".
-	// Let's try byte comparison.
-
 	if len(downloadedContent) != len(artifactContent) {
 		t.Errorf("Downloaded file size (%d) does not match artifact size (%d)", len(downloadedContent), len(artifactContent))
 	} else {
@@ -180,5 +177,59 @@ func TestArxivDownloader_Download_Compare(t *testing.T) {
 				break // Stop after first mismatch
 			}
 		}
+	}
+}
+
+func TestArxivDownloader_Download_PartialFailure(t *testing.T) {
+	// Setup temporary directory for downloads
+	tempDir, err := os.MkdirTemp("", "arxiv_download_partial_test")
+	if err != nil {
+		t.Fatalf("Failed to create temp dir: %v", err)
+	}
+	defer os.RemoveAll(tempDir)
+
+	downloader := NewArxivDownloader(tempDir)
+
+	// Create one valid paper and one invalid paper
+	validPaper := entities.Paper{
+		ID:    "http://arxiv.org/abs/2110.06449",
+		Title: "Valid Paper",
+		Links: []entities.Link{
+			{
+				Href: "http://arxiv.org/pdf/2110.06449",
+				Rel:  "related",
+				Type: "application/pdf",
+			},
+		},
+	}
+
+	invalidPaper := entities.Paper{
+		ID:    "http://arxiv.org/abs/dummy",
+		Title: "Invalid Paper",
+		Links: []entities.Link{
+			{
+				Href: "http://arxiv.org/abs/dummy",
+				Rel:  "alternate",
+				Type: "text/html",
+			},
+		},
+	}
+
+	paths, downloadErrors := downloader.Download(context.Background(), []entities.Paper{validPaper, invalidPaper})
+
+	// Check valid paper
+	if _, ok := paths[validPaper.ID]; !ok {
+		t.Error("Expected valid paper to be downloaded")
+	}
+	if _, ok := downloadErrors[validPaper.ID]; ok {
+		t.Error("Expected no error for valid paper")
+	}
+
+	// Check invalid paper
+	if _, ok := paths[invalidPaper.ID]; ok {
+		t.Error("Expected invalid paper not to be in paths")
+	}
+	if _, ok := downloadErrors[invalidPaper.ID]; !ok {
+		t.Error("Expected error for invalid paper")
 	}
 }
