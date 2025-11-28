@@ -83,6 +83,20 @@ type MetadataFetcher interface {
 }
 ```
 
+#### Error Handling
+
+The `Fetch` method returns `CustomError` types defined in `internal/pkg/errors`. Common errors include:
+
+- **Validation Errors**:
+  - `ErrMissingRequiredField` (400002): Returned when `Category` is missing.
+  - `ErrInvalidInput` (400001): Returned when neither `TimeSpan` nor `MaxResults` is specified.
+- **Infrastructure Errors**:
+  - `ErrNetwork` (500004): Returned when network communication fails.
+  - `ErrExternalAPI` (500006): Returned when the arXiv API returns a non-200 status code.
+  - `ErrExternalAPIParsing` (500007): Returned when the response XML cannot be parsed.
+- **Internal Errors**:
+  - `ErrInternalServer` (100001): Returned for URL parsing or request creation failures.
+
 ### Implementation (`internal/pkg/fetcher`)
 
 The `ArxivFetcher` implements `MetadataFetcher` for arXiv.org.
