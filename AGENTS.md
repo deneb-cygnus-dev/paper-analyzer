@@ -44,6 +44,23 @@ The "paper-analyzer" project is a polyglot application (Go and Python) designed 
 - `ai-docs/`: Documentation for AI agents.
 - `mise.local.toml`: Tool version management.
 
+### Documentation Style
+
+- **File Naming**: Use `kebab-case` for documentation files (e.g., `get-metadata-api.md`).
+- **Linting**: Markdown files should strictly follow the convention of `markdownlint`.
+- **Structure**:
+  - **Title**: H1 header.
+  - **Overview**: Brief description of the document's purpose.
+  - **Architecture**: (Optional) Package structure and relationships.
+  - **API Reference**: Details about interfaces, structs, and functions.
+  - **Usage**: Code examples showing how to use the component.
+  - **Testing**: Information about tests and how to run them.
+  - **Error Handling**: Details about specific errors and codes.
+- **Code Blocks**: Always specify the language (e.g., `go`, `bash`, `text`).
+- **Formatting**:
+  - **Trailing Spaces**: Remove trailing spaces from all lines.
+  - **Ordered Lists**: Start all ordered list elements with "1." (not "1. 2. 3. ...").
+
 ## Tech Stack
 
 - **Go**: Version 1.25.1
