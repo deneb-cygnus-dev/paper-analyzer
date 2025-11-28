@@ -74,3 +74,8 @@ var (
 	ErrExternalAPI        = New(500006, "External API returned an error.")
 	ErrExternalAPIParsing = New(500007, "Failed to parse response from external API.")
 )
+
+// Domain / Business Logic Errors (60xxxx)
+var (
+	ErrPaperDownload = New(600001, "Failed to download paper.")
+)
