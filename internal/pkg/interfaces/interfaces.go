@@ -25,7 +25,7 @@ type PDFDownloader interface {
 	//   - ctx: the context
 	//   - papers: the papers to download PDF files
 	// Returns:
-	//   - paths: the paths of the downloaded PDF files
-	//   - error: the error if any
-	Download(ctx context.Context, papers []entities.Paper) ([]string, error)
+	//   - paths: the paths of the downloaded PDF files, a map from paper ID to path
+	//   - errors: a map from paper ID to error
+	Download(ctx context.Context, papers []entities.Paper) (map[string]string, map[string]error)
 }
