@@ -67,6 +67,9 @@ func TestErrorCodes(t *testing.T) {
 	if ErrExternalAPI.Code != 500006 {
 		t.Errorf("ErrExternalAPI code = %d, want 500006", ErrExternalAPI.Code)
 	}
+	if ErrPaperDownload.Code != 600001 {
+		t.Errorf("ErrPaperDownload code = %d, want 600001", ErrPaperDownload.Code)
+	}
 }
 
 func TestWrap(t *testing.T) {

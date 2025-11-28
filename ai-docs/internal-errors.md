@@ -31,6 +31,7 @@ Error codes are 6 digits long and categorized by the first two digits, following
 | **30xxxx** | Authorization | Issues related to permissions and access control. |
 | **40xxxx** | Validation / Input | Errors caused by invalid client input or missing parameters. |
 | **50xxxx** | Infrastructure | Errors related to external systems, databases, networks, or third-party APIs. |
+| **60xxxx** | Domain / Business Logic | Errors related to specific business rules or domain operations. |
 
 ## Error Codes
 
@@ -74,6 +75,12 @@ Error codes are 6 digits long and categorized by the first two digits, following
 | `500005` | `ErrTimeout` | Operation timed out. |
 | `500006` | `ErrExternalAPI` | External API returned an error. |
 | `500007` | `ErrExternalAPIParsing` | Failed to parse response from external API. |
+
+### Domain / Business Logic (60xxxx)
+
+| Code | Variable | Message |
+| :--- | :--- | :--- |
+| `600001` | `ErrPaperDownload` | Failed to download paper. |
 
 ## Usage
 
