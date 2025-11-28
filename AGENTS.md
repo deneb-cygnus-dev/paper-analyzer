@@ -61,6 +61,10 @@ The "paper-analyzer" project is a polyglot application (Go and Python) designed 
   - **Trailing Spaces**: Remove trailing spaces from all lines.
   - **Ordered Lists**: Start all ordered list elements with "1." (not "1. 2. 3. ...").
 
+### Documentation Updates
+
+- **Post-Implementation Update**: Whenever a branch is completely implemented, the documentation in `ai-docs/` must be scanned and updated to reflect the newly implemented features.
+
 ## Tech Stack
 
 - **Go**: Version 1.25.1
