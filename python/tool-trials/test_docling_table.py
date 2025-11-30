@@ -17,7 +17,7 @@ _log = logging.getLogger(__name__)
 def main():
     logging.basicConfig(level=logging.INFO)
 
-    data_folder = Path(__file__).parent / "../testdata/artifacts"
+    data_folder = Path(__file__).parent / "../../testdata/artifacts"
     input_doc_path = data_folder / "Constrained Detecting Arrays.pdf"
     output_dir = data_folder
 
