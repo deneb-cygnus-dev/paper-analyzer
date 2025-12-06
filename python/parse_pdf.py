@@ -57,15 +57,16 @@ def get_section_headers_acm_conference_template(document: DoclingDocument):
     section_headers = []
     for element, _level in document.iterate_items():
         if element.label == DocItemLabel.SECTION_HEADER:
-            section_headers.append(element)
+            section_headers.append({"id": element.self_ref, "text": element.orig})
     return section_headers
 
 
 def process_acm_conference_template(document: DoclingDocument):
+    # reduce the redundant elements
+    document = clear_redundant_elements(document)
     # get the title
     section_headers = get_section_headers_acm_conference_template(document)
-    title = section_headers[0].text
-    document = clear_redundant_elements(document)
+    title = section_headers[0]["text"]
     return document
 
 
