@@ -19,7 +19,9 @@ def main():
     logging.getLogger("docling").setLevel(logging.WARNING)
 
     data_folder = Path(__file__).parent / "../../testdata/artifacts"
-    input_doc_path = data_folder / "Constrained Detecting Arrays.pdf"
+    input_doc_path = (
+        data_folder / "End-to-End Automated Logging via Multi-Agent Framework.pdf"
+    )
     output_dir = data_folder
 
     # Keep page/element images so they can be exported. The `images_scale` controls
