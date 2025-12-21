@@ -1,6 +1,7 @@
 import sys
 import logging
 import tempfile
+import json
 from pathlib import Path
 
 from docling_core.types.doc import PictureItem, TableItem, CodeItem
@@ -42,6 +43,12 @@ def main():
     table_counter = 0
     picture_counter = 0
     code_counter = 0
+    metadata = {
+        "content": "",
+        "tables": [],
+        "pictures": [],
+        "codes": []
+    }
     for element, _level in conv_res.document.iterate_items():
         if isinstance(element, TableItem):
             tag = element.self_ref.replace("/", "@")
@@ -50,6 +57,10 @@ def main():
             )
             with element_image_filename.open("wb") as fp:
                 element.get_image(conv_res.document).save(fp, "PNG")
+            metadata["tables"].append({
+                "id": table_counter,
+                "path": str(element_image_filename)
+            })
             table_counter += 1
 
         if isinstance(element, PictureItem):
@@ -59,6 +70,10 @@ def main():
             )
             with element_image_filename.open("wb") as fp:
                 element.get_image(conv_res.document).save(fp, "PNG")
+            metadata["pictures"].append({
+                "id": picture_counter,
+                "path": str(element_image_filename)
+            })
             picture_counter += 1
 
         if isinstance(element, CodeItem):
@@ -68,10 +83,16 @@ def main():
             )
             with element_image_filename.open("wb") as fp:
                 element.get_image(conv_res.document).save(fp, "PNG")
+            metadata["codes"].append({
+                "id": code_counter,
+                "path": str(element_image_filename)
+            })
             code_counter += 1
 
-    conv_res.document.save_as_json(output_dir / f"{doc_filename}.json", None, indent=2)
-    print(output_dir)
+    content_path = str(output_dir / f"{doc_filename}.json")
+    conv_res.document.save_as_json(content_path, None, indent=2)
+    metadata["content"] = content_path
+    print(json.dumps(metadata, indent=2))
 
 
 if __name__ == "__main__":
